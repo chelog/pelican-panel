@@ -165,7 +165,16 @@ const areaDataset = (data, backgroundColor = 'rgba(96, 165, 250, 0.3)', label = 
 
 window.ServerStats = {
     configure(options) {
+        const previousUuid = config.uuid;
+
         Object.assign(config, options);
+
+        // Livewire.navigate() can remount the console for another server in the
+        // same document, so drop the previous server's in-memory history.
+        if (config.uuid !== previousUuid) {
+            samples.length = 0;
+            currentState = null;
+        }
 
         restoreSamples();
     },
