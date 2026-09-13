@@ -186,6 +186,14 @@
             }
         };
 
+        // send() throws while a reconnect attempt is still CONNECTING; a message
+        // to a dead socket is dropped, exactly as it was before the retries.
+        const sendToSocket = (payload) => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(payload));
+            }
+        };
+
         const connect = () => {
             socket = new WebSocket("{{ $this->getSocket() }}");
 
@@ -237,10 +245,10 @@
                         break;
                     case 'auth success':
                         reconnectAttempts = 0;
-                        socket.send(JSON.stringify({
+                        sendToSocket({
                             'event': 'send logs',
                             'args': [null]
-                        }));
+                        });
                         break;
                     case 'token expiring':
                     case 'token expired':
@@ -262,24 +270,24 @@
                 return;
             }
 
-            socket.send(JSON.stringify({
+            sendToSocket({
                 'event': 'set state',
                 'args': [state]
-            }));
+            });
         });
 
         $wire.on('sendAuthRequest', ({ token }) => {
-            socket.send(JSON.stringify({
+            sendToSocket({
                 'event': 'auth',
                 'args': [token]
-            }));
+            });
         });
 
         $wire.on('sendServerCommand', ({ command }) => {
-            socket.send(JSON.stringify({
+            sendToSocket({
                 'event': 'send command',
                 'args': [command]
-            }));
+            });
         });
     </script>
     @endscript
