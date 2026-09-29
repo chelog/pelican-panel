@@ -43,7 +43,7 @@ class ServerOverview extends StatsOverviewWidget
     {
         $limit = $this->server->cpu > 0 ? ' / ' . format_number($this->server->cpu) . ' %' : ' / ∞';
 
-        return new HtmlString('<span id="server-stat-cpu">' . self::UNKNOWN . '</span>' . e($limit));
+        return new HtmlString('<span id="server-stat-cpu" data-limit="' . e($limit) . '">' . self::UNKNOWN . e($limit) . '</span>');
     }
 
     public function memoryUsage(): HtmlString
@@ -51,7 +51,7 @@ class ServerOverview extends StatsOverviewWidget
         $totalMemory = $this->server->memory * (config('panel.use_binary_prefix') ? 1024 * 1024 : 1000 * 1000);
         $limit = $this->server->memory > 0 ? ' / ' . convert_bytes_to_readable($totalMemory) : ' / ∞';
 
-        return new HtmlString('<span id="server-stat-memory">' . self::UNKNOWN . '</span>' . e($limit));
+        return new HtmlString('<span id="server-stat-memory" data-limit="' . e($limit) . '">' . self::UNKNOWN . e($limit) . '</span>');
     }
 
     public function diskUsage(): HtmlString

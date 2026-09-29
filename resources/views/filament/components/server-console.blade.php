@@ -170,16 +170,27 @@
                 setStatText('server-stat-disk', latest.disk === 0 ? window.ServerStats.unknownLabel() : window.ServerStats.bytesToReadable(latest.disk));
             }
 
-            const statValue = (format) => {
-                if (state === 'offline') {
-                    return window.ServerStats.offlineLabel();
+            // An offline server shows just the label, like the old PHP did, without the limit.
+            const setUsage = (id, format) => {
+                const element = document.getElementById(id);
+
+                if (!element) {
+                    return;
                 }
 
-                return state === null || !latest ? window.ServerStats.unknownLabel() : format(latest);
+                if (state === 'offline') {
+                    element.textContent = window.ServerStats.offlineLabel();
+
+                    return;
+                }
+
+                const value = state === null || !latest ? window.ServerStats.unknownLabel() : format(latest);
+
+                element.textContent = value + (element.dataset.limit ?? '');
             };
 
-            setStatText('server-stat-cpu', statValue((sample) => `${window.ServerStats.formatNumber(sample.cpu, 2, 0)} %`));
-            setStatText('server-stat-memory', statValue((sample) => window.ServerStats.bytesToReadable(sample.memory)));
+            setUsage('server-stat-cpu', (sample) => `${window.ServerStats.formatNumber(sample.cpu, 2, 0)} %`);
+            setUsage('server-stat-memory', (sample) => window.ServerStats.bytesToReadable(sample.memory));
 
             if (statusIsLive) {
                 setStatText('server-stat-status', window.ServerStats.statusText());
