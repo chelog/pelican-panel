@@ -24,7 +24,7 @@ const config = {
     locale: 'en',
     timezone: null,
     offlineLabel: 'Offline',
-    unknownLabel: '—',
+    unknownLabel: '',
     statusLabels: {},
 };
 

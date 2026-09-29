@@ -144,6 +144,7 @@
             locale: @js(str_replace('_', '-', user()->language ?? 'en')),
             timezone: @js(user()->timezone ?? 'UTC'),
             offlineLabel: @js(\App\Enums\ContainerStatus::Offline->getLabel()),
+            unknownLabel: @js(\App\Filament\Server\Widgets\ServerOverview::UNKNOWN),
             statusLabels: @js(collect(\App\Enums\ContainerStatus::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])),
         });
 

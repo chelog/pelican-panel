@@ -9,7 +9,7 @@ use Illuminate\Support\HtmlString;
 
 class ServerOverview extends StatsOverviewWidget
 {
-    private const UNKNOWN = '—';
+    public const UNKNOWN = '—';
 
     protected ?string $pollingInterval = null;
 
