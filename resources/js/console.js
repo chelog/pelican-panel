@@ -15,6 +15,7 @@ window.Xterm = {
 };
 
 const MAX_SAMPLES = 120;
+const MAX_SAMPLE_GAP = 5000;
 
 const config = {
     uuid: null,
@@ -258,16 +259,23 @@ window.ServerStats = {
         };
     },
 
-    // Mirrors ServerNetworkChart::getData(). The PHP maps the first sample to null
-    // and array_column() drops it, so the series is one shorter than the window.
+    // Mirrors ServerNetworkChart::getData(). The counters are cumulative, so each
+    // point is the delta from the previous sample; pairs further apart than
+    // MAX_SAMPLE_GAP (history restored after a revisit) would plot as one spike.
     networkData() {
         const window = windowed();
         const rx = [];
         const tx = [];
+        const points = [];
 
         for (let i = 1; i < window.length; i++) {
+            if (window[i].t - window[i - 1].t > MAX_SAMPLE_GAP) {
+                continue;
+            }
+
             rx.push(Math.max(0, window[i].rx - window[i - 1].rx));
             tx.push(Math.max(0, window[i].tx - window[i - 1].tx));
+            points.push(window[i]);
         }
 
         return {
@@ -275,7 +283,7 @@ window.ServerStats = {
                 areaDataset(rx, 'rgba(100, 255, 105, 0.5)', 'Inbound'),
                 areaDataset(tx, 'rgba(96, 165, 250, 0.3)', 'Outbound'),
             ],
-            labels: labelsFor(window.slice(1)),
+            labels: labelsFor(points),
         };
     },
 };
