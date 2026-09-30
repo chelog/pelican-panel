@@ -136,6 +136,8 @@
 
         let socket;
         let reconnectAttempts = 0;
+        let reconnectTimer = null;
+        let tornDown = false;
 
         window.ServerStats.configure({
             uuid: @js($this->server->uuid),
@@ -212,6 +214,10 @@
             // A dropped socket would otherwise leave the page frozen at its last
             // values, so reconnect quietly and only raise the banner once that fails.
             socket.onclose = (event) => {
+                if (tornDown) {
+                    return;
+                }
+
                 if (reconnectAttempts >= 5) {
                     $wire.dispatchSelf('websocket-error');
 
@@ -219,7 +225,7 @@
                 }
 
                 reconnectAttempts++;
-                setTimeout(connect, 2000);
+                reconnectTimer = setTimeout(connect, 2000);
             };
 
             socket.onmessage = function(websocketMessageEvent) {
@@ -252,8 +258,9 @@
                         handleDaemonErrorOutput(args[0]);
                         break;
                     case 'stats':
-                        window.ServerStats.push(JSON.parse(args[0]));
-                        pushToWidgets();
+                        if (window.ServerStats.push(args[0])) {
+                            pushToWidgets();
+                        }
                         break;
                     case 'auth success':
                         reconnectAttempts = 0;
@@ -276,7 +283,7 @@
 
         connect();
 
-        Livewire.on('setServerState', ({ state, uuid }) => {
+        const stopListeningForServerState = Livewire.on('setServerState', ({ state, uuid }) => {
             const serverUuid = "{{ $this->server->uuid }}";
             if (uuid !== serverUuid) {
                 return;
@@ -287,6 +294,15 @@
                 'args': [state]
             });
         });
+
+        // wire:navigate swaps the page without unloading it, so close this server's
+        // socket (and any pending reconnect) or it keeps feeding the next page's widgets.
+        document.addEventListener('livewire:navigating', () => {
+            tornDown = true;
+            clearTimeout(reconnectTimer);
+            stopListeningForServerState();
+            socket?.close();
+        }, { once: true });
 
         $wire.on('sendAuthRequest', ({ token }) => {
             sendToSocket({

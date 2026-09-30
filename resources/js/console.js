@@ -180,7 +180,21 @@ window.ServerStats = {
         restoreSamples();
     },
 
-    push(stats) {
+    // Takes the raw stats frame from Wings. Malformed or non-object frames are
+    // dropped, as the old server-side json_decode/is_object check did.
+    push(frame) {
+        let stats;
+
+        try {
+            stats = typeof frame === 'string' ? JSON.parse(frame) : frame;
+        } catch {
+            return false;
+        }
+
+        if (stats === null || typeof stats !== 'object') {
+            return false;
+        }
+
         samples.push({
             t: Date.now(),
             cpu: number(stats.cpu_absolute),
@@ -200,6 +214,8 @@ window.ServerStats = {
         if (typeof stats.state === 'string') {
             currentState = stats.state;
         }
+
+        return true;
     },
 
     setState(state) {
