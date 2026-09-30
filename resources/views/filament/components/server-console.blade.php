@@ -200,6 +200,21 @@
             }
         };
 
+        // The widgets load lazily, usually after the socket's first frames, and render
+        // placeholders until the next frame; replay the latest values as each one loads.
+        const widgetNames = @js(collect([
+            \App\Filament\Server\Widgets\ServerOverview::class,
+            \App\Filament\Server\Widgets\ServerCpuChart::class,
+            \App\Filament\Server\Widgets\ServerMemoryChart::class,
+            \App\Filament\Server\Widgets\ServerNetworkChart::class,
+        ])->map($componentName)->values());
+
+        const stopReplayingOnWidgetLoad = Livewire.hook('commit', ({ component, succeed }) => {
+            if (widgetNames.includes(component.name)) {
+                succeed(() => setTimeout(pushToWidgets));
+            }
+        });
+
         // send() throws while a reconnect attempt is still CONNECTING; a message
         // to a dead socket is dropped, exactly as it was before the retries.
         const sendToSocket = (payload) => {
@@ -301,6 +316,7 @@
             tornDown = true;
             clearTimeout(reconnectTimer);
             stopListeningForServerState();
+            stopReplayingOnWidgetLoad();
             socket?.close();
         }, { once: true });
 
