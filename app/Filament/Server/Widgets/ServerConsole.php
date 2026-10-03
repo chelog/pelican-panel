@@ -2,6 +2,7 @@
 
 namespace App\Filament\Server\Widgets;
 
+use App\Enums\ContainerStatus;
 use App\Enums\NodeJwtScope;
 use App\Enums\SubuserPermission;
 use App\Exceptions\Http\HttpForbiddenException;
@@ -111,6 +112,16 @@ class ServerConsole extends Widget
     public function tokenRequest(): void
     {
         $this->dispatch('sendAuthRequest', token: $this->getToken());
+    }
+
+    // Without the old per-frame stats round trip nothing else re-renders this widget,
+    // so cache the new state here or the command input stays locked until a reload.
+    #[On('console-status')]
+    public function receivedConsoleStatus(?string $state = null): void
+    {
+        if ($state && ($status = ContainerStatus::tryFrom($state))) {
+            cache()->put("servers.{$this->server->uuid}.status", $status, now()->addSeconds(15));
+        }
     }
 
     #[On('websocket-error')]
