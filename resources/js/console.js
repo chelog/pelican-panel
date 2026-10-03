@@ -191,7 +191,7 @@ window.ServerStats = {
             return false;
         }
 
-        if (stats === null || typeof stats !== 'object') {
+        if (stats === null || Array.isArray(stats) || typeof stats !== 'object') {
             return false;
         }
 

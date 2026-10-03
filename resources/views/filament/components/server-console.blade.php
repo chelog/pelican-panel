@@ -138,6 +138,8 @@
         let reconnectAttempts = 0;
         let reconnectTimer = null;
         let tornDown = false;
+        let authenticated = false;
+        const pendingActions = [];
 
         window.ServerStats.configure({
             uuid: @js($this->server->uuid),
@@ -223,12 +225,24 @@
             }
         };
 
+        // Commands and power actions issued while reconnecting would be dropped
+        // silently, so hold them until the new socket authenticates.
+        const sendAction = (payload) => {
+            if (authenticated && socket.readyState === WebSocket.OPEN) {
+                sendToSocket(payload);
+            } else {
+                pendingActions.push(payload);
+            }
+        };
+
         const connect = () => {
             socket = new WebSocket("{{ $this->getSocket() }}");
 
             // A dropped socket would otherwise leave the page frozen at its last
             // values, so reconnect quietly and only raise the banner once that fails.
             socket.onclose = (event) => {
+                authenticated = false;
+
                 if (tornDown) {
                     return;
                 }
@@ -279,10 +293,12 @@
                         break;
                     case 'auth success':
                         reconnectAttempts = 0;
+                        authenticated = true;
                         sendToSocket({
                             'event': 'send logs',
                             'args': [null]
                         });
+                        pendingActions.splice(0).forEach(sendToSocket);
                         break;
                     case 'token expiring':
                     case 'token expired':
@@ -304,7 +320,7 @@
                 return;
             }
 
-            sendToSocket({
+            sendAction({
                 'event': 'set state',
                 'args': [state]
             });
@@ -328,7 +344,7 @@
         });
 
         $wire.on('sendServerCommand', ({ command }) => {
-            sendToSocket({
+            sendAction({
                 'event': 'send command',
                 'args': [command]
             });
