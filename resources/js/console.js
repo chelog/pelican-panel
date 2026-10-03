@@ -41,10 +41,12 @@ const restoreSamples = () => {
     }
 
     try {
-        const horizon = Date.now() - MAX_SAMPLES * 1000;
+        const now = Date.now();
+        const horizon = now - MAX_SAMPLES * 1000;
         const stored = JSON.parse(sessionStorage.getItem(storageKey()) ?? '[]');
 
-        samples.push(...stored.filter((sample) => Number.isFinite(sample?.t) && sample.t >= horizon));
+        // The upper bound also rejects timestamps too large for a Date, which would throw in labelsFor().
+        samples.push(...stored.filter((sample) => Number.isFinite(sample?.t) && sample.t >= horizon && sample.t <= now));
     } catch {}
 };
 
